@@ -20,6 +20,7 @@
 # - DO NOT add the partition name at the start of any entry (eg. "/system/dpolicy_system")
 # - DO NOT add a slash at the start of any entry (eg. "/dpolicy_system")
 
+
 # Overlays
 SYSTEM_DEBLOAT+="
 system/app/WifiRROverlayAppQC
@@ -33,31 +34,34 @@ overlay/SoftapOverlayQC
 
 # GameDriver
 SYSTEM_DEBLOAT+="
-system/priv-app/DevGPUDriver-EX2200
-system/priv-app/GameDriver-EX2200
-"
-
-# Camera SDK
-SYSTEM_DEBLOAT+="
-system/etc/permissions/cameraservice.xml
-system/framework/scamera_sep.jar
-system/priv-app/SCameraSDKService
+system/priv-app/DevGPUDriver-SM8750
+system/priv-app/GameDriver-SM8750
 "
 
 # system_ext clean-up
 SYSTEM_DEBLOAT+="
-system/etc/permissions/org.carconnectivity.android.digitalkey.rangingintent.xml
-system/etc/permissions/org.carconnectivity.android.digitalkey.secureelement.xml
+system/etc/permissions/org.carconnectivity.android.digitalkey.timesync.xml
 "
 SYSTEM_EXT_DEBLOAT+="
-framework/org.carconnectivity.android.digitalkey.rangingintent.jar
-framework/org.carconnectivity.android.digitalkey.secureelement.jar
-framework/oat/arm/org.carconnectivity.android.digitalkey.rangingintent.odex
-framework/oat/arm/org.carconnectivity.android.digitalkey.rangingintent.vdex
-framework/oat/arm/org.carconnectivity.android.digitalkey.secureelement.odex
-framework/oat/arm/org.carconnectivity.android.digitalkey.secureelement.vdex
-framework/oat/arm64/org.carconnectivity.android.digitalkey.rangingintent.odex
-framework/oat/arm64/org.carconnectivity.android.digitalkey.rangingintent.vdex
-framework/oat/arm64/org.carconnectivity.android.digitalkey.secureelement.odex
-framework/oat/arm64/org.carconnectivity.android.digitalkey.secureelement.vdex
+framework/org.carconnectivity.android.digitalkey.timesync.jar
+"
+
+# Camera SDK
+SYSTEM_DEBLOAT+="
+system/etc/default-permissions/default-permissions-com.samsung.android.globalpostprocmgr.xml
+system/etc/default-permissions/default-permissions-com.samsung.petservice.xml
+system/etc/default-permissions/default-permissions-com.samsung.videoscan.xml
+system/etc/permissions/cameraservice.xml
+system/etc/permissions/privapp-permissions-com.samsung.android.globalpostprocmgr.xml
+system/etc/permissions/privapp-permissions-com.samsung.petservice.xml
+system/etc/permissions/privapp-permissions-com.samsung.videoscan.xml
+system/etc/permissions/sec_camerax_impl.xml
+system/etc/permissions/sec_camerax_service.xml
+system/framework/sec_camerax_impl.jar
+system/framework/scamera_sep.jar
+system/priv-app/GlobalPostProcMgr
+system/priv-app/PetService
+system/priv-app/SCameraSDKService
+system/priv-app/sec_camerax_service
+system/priv-app/VideoScan
 "

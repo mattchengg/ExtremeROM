@@ -64,6 +64,8 @@ jobs:
       - name: Set up build environment
         run: |
           sudo apt update
+          sudo apt update && sudo apt upgrade && sudo apt install -y attr ccache clang git golang libbrotli-dev libgtest-dev liblz4-dev libpcre2-dev libprotobuf-dev libunwind-dev libusb-1.0-0-dev libzstd-dev lld openjdk-11-jdk protobuf-compiler zip zipalign make cmake npm lz4 brotli patchelf curl xxd
+          sudo apt update && sudo apt upgrade && sudo apt install -y attr ccache clang git golang libbrotli-dev libgtest-dev liblz4-dev libpcre2-dev libprotobuf-dev libunwind-dev libusb-1.0-0-dev libzstd-dev lld openjdk-11-jdk protobuf-compiler zip zipalign make cmake npm lz4 brotli patchelf curl xxd
           DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
             attr ccache clang ffmpeg golang \
             libbrotli-dev libgtest-dev libprotobuf-dev libunwind-dev libpcre2-dev \

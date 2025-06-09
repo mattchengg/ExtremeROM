@@ -57,6 +57,7 @@ jobs:
 
           if [ -s out/firmware-a5460.zip ]; then
             unzip -q out/firmware-a5460.zip -d out/odin/${MODEL1}_${REGION1}
+            rm out/firmware-a5460.zip
           else
             echo "Firmware #1 下載失敗或為空檔案" >&2
             exit 1
@@ -74,6 +75,7 @@ jobs:
 
           if [ -s out/firmware-s938b.zip ]; then
             unzip -q out/firmware-s938b.zip -d out/odin/${MODEL2}_${REGION2}
+            rm out/firmware-s938b.zip
           else
             echo "Firmware #2 下載失敗或為空檔案" >&2
             exit 1

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       do_release:
-        description: 'Release？'
+        description: 'Release?'
         required: true
         type: boolean
 
@@ -37,25 +37,28 @@ jobs:
         with:
           retain: 'compiler_cmake'
 
-      - name: Download old firmware for A54
+      - name: Download firmware for SM-A5460 (BRI)
         run: |
           set -e
           MODEL="SM-A5460"
           REGION="BRI"
           mkdir -p out/odin/${MODEL}_${REGION}
-          curl -L -o out/firmware.zip "https://27-samfw.cloud/v2/IxJCDiMnLgAhFyEmAyQNFDRAHg4DCB4lFzssIDs2ByAzMUEgOzEUQDMQMCMBOyw/IRsvES4HLDsvNgIhLjAsCDMDHiAvCB0UPBchQC4AKUAvLyElOyweIzU2BkAPLx4KIxcUIRcLIQ0SJx05DQszADswIDU1CDQUAzZBITIkPCQNACkRNDYHOg04BkIeCzwGHgM8FCMkNDEjCxVACTghHzInDQYuFx8rIwAvJCFAMxE8EQY5NRshDjURPho0ES8kNRYhOR44LwsJEQc5NBsjKyEAPg4hAAYsLjgeLDQRHg4yJTMsMiUNKzwAPh8mGzk5FyUzDTUHQQEuByADISxBIwMnOUANQAokMzYCICMXPjkDFzA1CS8pDTsxHhwzQAZCOzEHHjMsNCsNMT4eODAeHgk7CDAeFjw5ODFBEhIvPiAeAw0AIwcCBTsxQRYXOwVAOAAhKTw/FD01OCBCJggwOR4XAiAeJSE8NDszHAMIKTkJOy4bEkAuNQ8DKQwvJSwDIxcHQDxAIB0jOAZCIwM0MQEDDTEBAwUkASITEw=="
+          curl -L -o out/firmware-a5460.zip "https://27-samfw.cloud/v2/IxJCDiMnLgAhFyEmAyQNFDRAHg4DCB4lFzssIDs2ByAzMUEgOzEUQDMQMCMBOyw/IRsvES4HLDsvNgIhLjAsCDMDHiAvCB0UPBchQC4AKUAvLyElOyweIzU2BkAPLx4KIxcUIRcLIQ0SJx05DQszADswIDU1CDQUAzZBITIkPCQNACkRNDYHOg04BkIeCzwGHgM8FCMkNDEjCxVACTghHzInDQYuFx8rIwAvJCFAMxE8EQY5NRshDjURPho0ES8kNRYhOR44LwsJEQc5NBsjKyEAPg4hAAYsLjgeLDQRHg4yJTMsMiUNKzwAPh8mGzk5FyUzDTUHQQEuByADISxBIwMnOUANQAokMzYCICMXPjkDFzA1CS8pDTsxHhwzQAZCOzEHHjMsNCsNMT4eODAeHgk7CDAeFjw5ODFBEhIvPiAeAw0AIwcCBTsxQRYXOwVAOAAhKTw/FD01OCBCJggwOR4XAiAeJSE8NDszHAMIKTkJOy4bEkAuNQ8DKQwvJSwDIxcHQDxAIB0jOAZCIwM0MQEDDTEBAwUkASITEw=="
 
-          if [ -f out/firmware.zip ]; then
-            unzip out/firmware.zip -d out/odin/${MODEL}_${REGION}
-          else
-            echo "韌體下載失敗" >&2
-            exit 1
-          fi
+          unzip out/firmware-a5460.zip -d out/odin/${MODEL}_${REGION}
+          latest_ver=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION/$MODEL/version.xml" | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
+          echo "$latest_ver" > out/odin/${MODEL}_${REGION}/.downloaded
 
-          # 取得最新版本資訊並寫入 .downloaded
-          latest_ver=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION/$MODEL/version.xml" \
-            | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
+      - name: Download firmware for S938B (EUX)
+        run: |
+          set -e
+          MODEL="SM-S938B"
+          REGION="EUX"
+          mkdir -p out/odin/${MODEL}_${REGION}
+          curl -L -o out/firmware-s938b.zip "https://27-samfw.cloud/v2/IxJCDiMnLgAhFyEmAyQNFDRAHg4DCB4lFzssIDs2ByAzMUEgOzEUQDMQMCMBOyw/IRsvES4HLDsvNgIhLjAsCDMDHiAvCB0UPBchQC4AKUAvLyElOyweIzU2BkAPLx4KIxcUIRcLIQ0SJx05DQszADswIDU1CDQUAzZBITIkPCQNACkRNDYHOg04BkIeCzwGHgM8FCMkNDEjCxVACTghHzInDQYuFx8rIwAvJCFAMxE8EQY5NRshDjURPho0ES8kNRYhOR44LwsJEQc5NBsjKyEAPg4hAAYsLjgeLDQRHg4yJTMsMiUNKzwAPh8mGzk5FyUzDTUHQQEuByADISxBIwMnOUANQAokMzYCICMXPjkDFzA1CS8pDTsxHhwzQAZCOzEHHjMsNCsNMT4eODAeHgk7CDAeFjw5ODFBEhIvPiAeAw0AIwcCBTsxQRYXOwVAOAAhKTw/FD01OCBCJggwOR4XAiAeJSE8NDszHAMIKTkJOy4bEkAuNQ8DKQwvJSwDIxcHQDxAIB0jOAZCIwM0MQEDDTEBAwUkASITEw=="
 
+          unzip out/firmware-s938b.zip -d out/odin/${MODEL}_${REGION}
+          latest_ver=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION/$MODEL/version.xml" | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
           echo "$latest_ver" > out/odin/${MODEL}_${REGION}/.downloaded
       
       - name: Set up build environment

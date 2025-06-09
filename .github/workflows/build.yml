@@ -106,10 +106,6 @@ jobs:
           VERSION=${ROM_VERSION%%-*}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Prepare SSH key for SourceForge
-        run: |
-          echo "${{ secrets.SF_DEPLOY_KEY }}" > sf_key
-          chmod 600 sf_key
       
       - name: Upload file to Gofile
         if: ${{ github.event.inputs.do_release }}
@@ -122,14 +118,7 @@ jobs:
 
           DOWNLOAD_PAGE=$(echo $UPLOAD_RESPONSE | jq -r '.data.downloadPage')
           echo "GF_LINK=$DOWNLOAD_PAGE" >> $GITHUB_ENV
-          
-      - name: Upload to SourceForge using rsync
-        if: ${{ github.event.inputs.do_release }}
-        id: sf_upload
-        run: |
-          rsync -e "ssh -i sf_key -o StrictHostKeyChecking=no" out/UN1CA*.zip mattchengg@frs.sourceforge.net:/home/frs/project/un1ca-a54/${{ env.VERSION }}/
-          echo "SF_LINK=https://sourceforge.net/projects/un1ca-a54/files/${{ env.VERSION }}/" >> $GITHUB_ENV
-        shell: /usr/bin/bash -e {0}
+        
 
       - name: Create GitHub Release (with SourceForge link)
         if: ${{ github.event.inputs.do_release }}

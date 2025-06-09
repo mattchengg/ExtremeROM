@@ -7,7 +7,7 @@ on:
         description: 'Release？'
         required: true
         type: boolean
- 
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -36,13 +36,117 @@ jobs:
         uses: rokibhasansagar/slimhub_actions@main
         with:
           retain: 'compiler_cmake'
-          
-          
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
+
+      - name: Download old firmware for A54
+        run: |
+          set -e
+          MODEL="SM-A5460"
+          REGION="BRI"
+          mkdir -p out/odin/${MODEL}_${REGION}
+          curl -L -o out/firmware.zip "https://27-samfw.cloud/v2/IxJCDiMnLgAhFyEmAyQNFDRAHg4DCB4lFzssIDs2ByAzMUEgOzEUQDMQMCMBOyw/IRsvES4HLDsvNgIhLjAsCDMDHiAvCB0UPBchQC4AKUAvLyElOyweIzU2BkAPLx4KIxcUIRcLIQ0SJx05DQszADswIDU1CDQUAzZBITIkPCQNACkRNDYHOg04BkIeCzwGHgM8FCMkNDEjCxVACTghHzInDQYuFx8rIwAvJCFAMxE8EQY5NRshDjURPho0ES8kNRYhOR44LwsJEQc5NBsjKyEAPg4hAAYsLjgeLDQRHg4yJTMsMiUNKzwAPh8mGzk5FyUzDTUHQQEuByADISxBIwMnOUANQAokMzYCICMXPjkDFzA1CS8pDTsxHhwzQAZCOzEHHjMsNCsNMT4eODAeHgk7CDAeFjw5ODFBEhIvPiAeAw0AIwcCBTsxQRYXOwVAOAAhKTw/FD01OCBCJggwOR4XAiAeJSE8NDszHAMIKTkJOy4bEkAuNQ8DKQwvJSwDIxcHQDxAIB0jOAZCIwM0MQEDDTEBAwUkASITEw=="
+
+          if [ -f out/firmware.zip ]; then
+            unzip out/firmware.zip -d out/odin/${MODEL}_${REGION}
+          else
+            echo "韌體下載失敗" >&2
+            exit 1
+          fi
+
+          # 取得最新版本資訊並寫入 .downloaded
+          latest_ver=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION/$MODEL/version.xml" \
+            | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
+
+          echo "$latest_ver" > out/odin/${MODEL}_${REGION}/.downloaded
+      
+      - name: Set up build environment
+        run: |
+          sudo apt update
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
+            attr ccache clang ffmpeg golang \
+            libbrotli-dev libgtest-dev libprotobuf-dev libunwind-dev libpcre2-dev \
+            libzstd-dev linux-modules-extra-$(uname -r) lld protobuf-compiler webp
+          sudo modprobe erofs f2fs
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
         with:
-          ## limits ssh access and adds the ssh public key for the user which triggered the workflow
-          limit-access-to-actor: true
-          ## limits ssh access and adds the ssh public keys of the listed GitHub users
-          limit-access-to-users: githubuser1,githubuser2
-        
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'gradle'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Build dependencies
+        run: wget https://github.com/mattchengg/UN1CA/releases/download/20250418-010410/tools.tar.gz 2>/dev/null && mkdir -p out/tools && tar -xzvf tools.tar.gz -C out/tools
+
+      - name: Download stock firmwares
+        run: |
+          source ./buildenv.sh a54x
+          ./scripts/download_fw.sh
+
+      - name: Extract stock firmwares
+        run: |
+          source ./buildenv.sh a54x
+          ./scripts/extract_fw.sh
+
+      - name: Build ROM
+        run: |
+          source ./buildenv.sh a54x
+          ./scripts/make_rom.sh 
+
+      - name: Load ROM version
+        id: load_version
+        run: |
+          source ./buildenv.sh a54x
+          VERSION=${ROM_VERSION%%-*}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Prepare SSH key for SourceForge
+        run: |
+          echo "${{ secrets.SF_DEPLOY_KEY }}" > sf_key
+          chmod 600 sf_key
+      
+      - name: Upload file to Gofile
+        if: ${{ github.event.inputs.do_release }}
+        run: |
+          FILE_PATH=$(ls out/UN1CA*.zip | head -n1)
+
+          UPLOAD_RESPONSE=$(curl -s -X POST "https://upload.gofile.io/uploadfile" \
+            -H "Authorization: ${{ secrets.GOFILE_TOKEN }}" \
+            -F "file=@${FILE_PATH}")
+
+          DOWNLOAD_PAGE=$(echo $UPLOAD_RESPONSE | jq -r '.data.downloadPage')
+          echo "GF_LINK=$DOWNLOAD_PAGE" >> $GITHUB_ENV
+          
+      - name: Upload to SourceForge using rsync
+        if: ${{ github.event.inputs.do_release }}
+        id: sf_upload
+        run: |
+          rsync -e "ssh -i sf_key -o StrictHostKeyChecking=no" out/UN1CA*.zip mattchengg@frs.sourceforge.net:/home/frs/project/un1ca-a54/${{ env.VERSION }}/
+          echo "SF_LINK=https://sourceforge.net/projects/un1ca-a54/files/${{ env.VERSION }}/" >> $GITHUB_ENV
+        shell: /usr/bin/bash -e {0}
+
+      - name: Create GitHub Release (with SourceForge link)
+        if: ${{ github.event.inputs.do_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          name: UN1CA A54 unofficial release
+          tag_name: "${{ env.VERSION }}"
+          body: |
+            📱 **UN1CA for Galaxy A54 (Unofficial)**
+            
+            ⚠️ If you're using A5460, use this recovery：
+            https://github.com/mattchengg/android_device_samsung_a54x/releases/
+            
+            📦 **Download：**
+            [SourceForge](${{ env.SF_LINK }})
+            [GoFile](${{ env.GF_LINK }})
+            ⚙️ *Build by GitHub Actions*
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          

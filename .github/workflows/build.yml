@@ -4,9 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       do_release:
-        description: 'Release?'
+        description: 'Release？'
         required: true
         type: boolean
+      firmware_url_1:
+        description: 'target fw'
+        required: true
+        type: string
+      firmware_url_2:
+        description: 'source fw'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -37,34 +45,47 @@ jobs:
         with:
           retain: 'compiler_cmake'
 
-      - name: Download firmware for SM-A5460 (BRI)
+      - name: Download old firmwares
         run: |
           set -e
-          MODEL="SM-A5460"
-          REGION="BRI"
-          mkdir -p out/odin/${MODEL}_${REGION}
-          curl -L -o out/firmware-a5460.zip "https://27-samfw.cloud/v2/IxJCDiMnLgAhFyEmAyQNFDRAHg4DCB4lFzssIDs2ByAzMUEgOzEUQDMQMCMBOyw/IRsvES4HLDsvNgIhLjAsCDMDHiAvCB0UPBchQC4AKUAvLyElOyweIzU2BkAPLx4KIxcUIRcLIQ0SJx05DQszADswIDU1CDQUAzZBITIkPCQNACkRNDYHOg04BkIeCzwGHgM8FCMkNDEjCxVACTghHzInDQYuFx8rIwAvJCFAMxE8EQY5NRshDjURPho0ES8kNRYhOR44LwsJEQc5NBsjKyEAPg4hAAYsLjgeLDQRHg4yJTMsMiUNKzwAPh8mGzk5FyUzDTUHQQEuByADISxBIwMnOUANQAokMzYCICMXPjkDFzA1CS8pDTsxHhwzQAZCOzEHHjMsNCsNMT4eODAeHgk7CDAeFjw5ODFBEhIvPiAeAw0AIwcCBTsxQRYXOwVAOAAhKTw/FD01OCBCJggwOR4XAiAeJSE8NDszHAMIKTkJOy4bEkAuNQ8DKQwvJSwDIxcHQDxAIB0jOAZCIwM0MQEDDTEBAwUkASITEw=="
 
-          unzip out/firmware-a5460.zip -d out/odin/${MODEL}_${REGION}
-          latest_ver=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION/$MODEL/version.xml" | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
-          echo "$latest_ver" > out/odin/${MODEL}_${REGION}/.downloaded
+          # 第一組
+          MODEL1="SM-A5460"
+          REGION1="BRI"
+          mkdir -p out/odin/${MODEL1}_${REGION1}
+          curl -L -o out/firmware-a5460.zip "${{ github.event.inputs.firmware_url_1 }}"
 
-      - name: Download firmware for S938B (EUX)
-        run: |
-          set -e
-          MODEL="SM-S938B"
-          REGION="EUX"
-          mkdir -p out/odin/${MODEL}_${REGION}
-          curl -L -o out/firmware-s938b.zip "https://27-samfw.cloud/v2/IxJCDiMnLgAhFyEmAyQNFDRAHg4DCB4lFzssIDs2ByAzMUEgOzEUQDMQMCMBOyw/IRsvES4HLDsvNgIhLjAsCDMDHiAvCB0UPBchQC4AKUAvLyElOyweIzU2BkAPLx4KIxcUIRcLIQ0SJx05DQszADswIDU1CDQUAzZBITIkPCQNACkRNDYHOg04BkIeCzwGHgM8FCMkNDEjCxVACTghHzInDQYuFx8rIwAvJCFAMxE8EQY5NRshDjURPho0ES8kNRYhOR44LwsJEQc5NBsjKyEAPg4hAAYsLjgeLDQRHg4yJTMsMiUNKzwAPh8mGzk5FyUzDTUHQQEuByADISxBIwMnOUANQAokMzYCICMXPjkDFzA1CS8pDTsxHhwzQAZCOzEHHjMsNCsNMT4eODAeHgk7CDAeFjw5ODFBEhIvPiAeAw0AIwcCBTsxQRYXOwVAOAAhKTw/FD01OCBCJggwOR4XAiAeJSE8NDszHAMIKTkJOy4bEkAuNQ8DKQwvJSwDIxcHQDxAIB0jOAZCIwM0MQEDDTEBAwUkASITEw=="
+          if [ -s out/firmware-a5460.zip ]; then
+            unzip -q out/firmware-a5460.zip -d out/odin/${MODEL1}_${REGION1}
+          else
+            echo "Firmware #1 下載失敗或為空檔案" >&2
+            exit 1
+          fi
 
-          unzip out/firmware-s938b.zip -d out/odin/${MODEL}_${REGION}
-          latest_ver=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION/$MODEL/version.xml" | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
-          echo "$latest_ver" > out/odin/${MODEL}_${REGION}/.downloaded
-      
+          latest_ver_1=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION1/$MODEL1/version.xml" \
+            | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
+          echo "$latest_ver_1" > out/odin/${MODEL1}_${REGION1}/.downloaded
+
+          # 第二組
+          MODEL2="SM-S938B"
+          REGION2="EUX"
+          mkdir -p out/odin/${MODEL2}_${REGION2}
+          curl -L -o out/firmware-s938b.zip "${{ github.event.inputs.firmware_url_2 }}"
+
+          if [ -s out/firmware-s938b.zip ]; then
+            unzip -q out/firmware-s938b.zip -d out/odin/${MODEL2}_${REGION2}
+          else
+            echo "Firmware #2 下載失敗或為空檔案" >&2
+            exit 1
+          fi
+
+          latest_ver_2=$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$REGION2/$MODEL2/version.xml" \
+            | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
+          echo "$latest_ver_2" > out/odin/${MODEL2}_${REGION2}/.downloaded
+
       - name: Set up build environment
         run: |
           sudo apt update
-          sudo apt update && sudo apt upgrade && sudo apt install -y attr ccache clang git golang libbrotli-dev libgtest-dev liblz4-dev libpcre2-dev libprotobuf-dev libunwind-dev libusb-1.0-0-dev libzstd-dev lld openjdk-11-jdk protobuf-compiler zip zipalign make cmake npm lz4 brotli patchelf curl xxd
           sudo apt update && sudo apt upgrade && sudo apt install -y attr ccache clang git golang libbrotli-dev libgtest-dev liblz4-dev libpcre2-dev libprotobuf-dev libunwind-dev libusb-1.0-0-dev libzstd-dev lld openjdk-11-jdk protobuf-compiler zip zipalign make cmake npm lz4 brotli patchelf curl xxd
           DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
             attr ccache clang ffmpeg golang \
@@ -111,7 +132,6 @@ jobs:
           VERSION=${ROM_VERSION%%-*}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      
       - name: Upload file to Gofile
         if: ${{ github.event.inputs.do_release }}
         run: |
@@ -123,7 +143,6 @@ jobs:
 
           DOWNLOAD_PAGE=$(echo $UPLOAD_RESPONSE | jq -r '.data.downloadPage')
           echo "GF_LINK=$DOWNLOAD_PAGE" >> $GITHUB_ENV
-        
 
       - name: Create GitHub Release (with SourceForge link)
         if: ${{ github.event.inputs.do_release }}
@@ -138,9 +157,7 @@ jobs:
             https://github.com/mattchengg/android_device_samsung_a54x/releases/
             
             📦 **Download：**
-            [SourceForge](${{ env.SF_LINK }})
             [GoFile](${{ env.GF_LINK }})
             ⚙️ *Build by GitHub Actions*
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
-          

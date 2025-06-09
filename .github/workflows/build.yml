@@ -110,7 +110,7 @@ jobs:
       - name: Upload file to Gofile
         if: ${{ github.event.inputs.do_release }}
         run: |
-          FILE_PATH=$(ls out/UN1CA*.zip | head -n1)
+          FILE_PATH=$(ls out/Ex*.zip | head -n1)
 
           UPLOAD_RESPONSE=$(curl -s -X POST "https://upload.gofile.io/uploadfile" \
             -H "Authorization: ${{ secrets.GOFILE_TOKEN }}" \
@@ -124,10 +124,10 @@ jobs:
         if: ${{ github.event.inputs.do_release }}
         uses: softprops/action-gh-release@v2
         with:
-          name: UN1CA A54 unofficial release
+          name: A54 unofficial release
           tag_name: "${{ env.VERSION }}"
           body: |
-            📱 **UN1CA for Galaxy A54 (Unofficial)**
+            📱 **For Galaxy A54 (Unofficial)**
             
             ⚠️ If you're using A5460, use this recovery：
             https://github.com/mattchengg/android_device_samsung_a54x/releases/
